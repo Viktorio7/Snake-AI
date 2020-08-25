@@ -2,18 +2,20 @@ import pyglet
 import random
 from SnakeBody import SnakeBody
 from SnakeHead import SnakeHead
-from Button import Button
 from Apple import Apple
+from DirectionalButton import DirectionalButton
+from CheckButton import CheckButton
 
-window = pyglet.window.Window(1440, 900, visible=False)
+window = pyglet.window.Window(1440, 900, vsync=True)
 window.set_location(30, 50)
 
-snake_dead = False
 apple = []
 snake = [SnakeHead(17, 28), SnakeBody(16, 28), SnakeBody(15, 28)]
-snake[0].direction = 2
 
-buttons = [Button(555, 450, 250, 100, 30, 'Right', 1), Button(45, 450, 250, 100, 30, 'Left', -1)]
+dir_buttons = [DirectionalButton(x=555, y=450, width=250, height=100, font_size=30, text='Right', direction=1),
+               DirectionalButton(x=45, y=450, width=250, height=100, font_size=30, text='Left', direction=-1)]
+
+check_button = CheckButton(x=45, y=100, width=50, height=50, font_size=20, text='Death wall')
 
 
 def draw_UI():
@@ -42,8 +44,7 @@ def death():
     for i in range(1, len(snake)):
         if snake[0].X == snake[i].X:
             if snake[0].Y == snake[i].Y:
-                global snake_dead
-                snake_dead = True
+                snake[0].snake_dead = True
 
 
 def eaten_apple():
@@ -63,7 +64,7 @@ def free_space(x, y):
 
 
 def create_apple():
-    while (1):
+    while 1:
         temp_x = random.randint(0, 34)
         temp_y = random.randint(0, 57)
         if free_space(temp_x, temp_y):
@@ -77,9 +78,14 @@ timing_control = False
 
 @window.event
 def on_mouse_press(x, y, button, modifiers):
+    if check_button.button_clicked(x, y):
+        if check_button.checked:
+            check_button.checked = False
+        else:
+            check_button.checked = True
     global timing_control
     if not timing_control:
-        for item in buttons:
+        for item in dir_buttons:
             if item.button_clicked(x, y):
                 snake[0].direction += item.direction
                 timing_control = True
@@ -89,7 +95,8 @@ def on_mouse_press(x, y, button, modifiers):
 def on_draw():
     window.clear()
     draw_UI()
-    for item in buttons:
+    check_button.button_draw()
+    for item in dir_buttons:
         item.button_draw()
     for item in apple:
         item.draw()
@@ -99,6 +106,7 @@ def on_draw():
 
 def update(dt):
     global snake
+    snake[0].death_wall = check_button.checked
     if not apple:
         create_apple()
 
@@ -109,10 +117,8 @@ def update(dt):
     snake[0].position_part()
 
     death()
-    global snake_dead
-    if snake_dead:
+    if snake[0].snake_dead:
         snake = [SnakeHead(17, 28), SnakeBody(16, 28), SnakeBody(15, 28)]
-        snake_dead = False
     eaten_apple()
     global timing_control
     timing_control = False
@@ -120,5 +126,5 @@ def update(dt):
 
 if __name__ == '__main__':
     window.set_visible()
-    pyglet.clock.schedule_interval(update, 1 / 10)
+    pyglet.clock.schedule_interval(update, 1 / 120)
     pyglet.app.run()
